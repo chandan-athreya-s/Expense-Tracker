@@ -93,6 +93,6 @@ public class Expense {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    protected Expense() { }
+    public Expense() { }
 
 }
