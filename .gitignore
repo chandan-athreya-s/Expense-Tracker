@@ -14,3 +14,5 @@ frontend/dist/
 .vscode/
 *.log
 docs/expense_tracker_project_knowledge_base.md
+
+expense-pwd.txt
