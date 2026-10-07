@@ -49,6 +49,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong on the server", List.of());   
     }
 
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiError> handleBadRequest(BadRequestException ex) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), List.of());
+    }
+
     private ResponseEntity<ApiError> build(HttpStatus status, String message, List<String> details) {
         ApiError body = new ApiError(Instant.now(), status.value(), status.getReasonPhrase(), message, details);
         return ResponseEntity.status(status).body(body);

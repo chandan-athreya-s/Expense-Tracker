@@ -4,6 +4,7 @@ import com.example.expensetracker.dto.ExpenseRequest;
 import com.example.expensetracker.dto.ExpenseResponse;
 import com.example.expensetracker.entity.Category;
 import com.example.expensetracker.entity.PaymentMethod;
+import com.example.expensetracker.exception.BadRequestException;          // NEW
 import com.example.expensetracker.exception.ResourceNotFoundException;
 import com.example.expensetracker.repository.CategoryRepository;
 import jakarta.persistence.EntityManager;
@@ -16,17 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;                                                     // NEW
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/*
- * @SpringBootTest starts the whole application context, so the real service, real
- * repositories and real PostgreSQL work together. We use the "test" profile so it
- * points at expense_tracker_test, never your real data.
- *
- * @Transactional on a TEST class makes every test roll back at the end, so tests
- * stay independent and leave nothing behind.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -50,6 +44,12 @@ class ExpenseServiceTest {
     private ExpenseRequest requestFor(Category category, String amount, String description) {
         return new ExpenseRequest(LocalDate.of(2026, 10, 1), category.getId(),
                 new BigDecimal(amount), description, PaymentMethod.UPI);
+    }
+
+    // NEW helper: create a 10.00 UPI expense on the given date (format yyyy-MM-dd).
+    private void createOn(Category category, String date) {
+        expenseService.create(new ExpenseRequest(LocalDate.parse(date), category.getId(),
+                new BigDecimal("10.00"), "x", PaymentMethod.UPI));
     }
 
     @Test
@@ -94,5 +94,34 @@ class ExpenseServiceTest {
         entityManager.clear();   // forget cached objects so the next lookup hits the database
 
         assertThrows(ResourceNotFoundException.class, () -> expenseService.getById(id));
+    }
+
+    // NEW: the boundary test. Off-by-one mistakes on the first and last day of a month
+    // are the classic reporting bug, so we put an expense just outside each end.
+    @Test
+    void getAllWithDateRangeIncludesBothEndsAndExcludesOutside() {
+        Category category = newCategory();
+        createOn(category, "2026-09-30");   // just before the range: excluded
+        createOn(category, "2026-10-01");   // first day: included
+        createOn(category, "2026-10-31");   // last day: included
+        createOn(category, "2026-11-01");   // just after the range: excluded
+
+        List<ExpenseResponse> october =
+                expenseService.getAll(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31));
+
+        assertEquals(2, october.size());
+        // Results are newest first, so Oct 31 must come before Oct 1.
+        assertEquals(LocalDate.of(2026, 10, 31), october.get(0).expenseDate());
+    }
+
+    // NEW: the two invalid shapes the service must reject.
+    @Test
+    void getAllWithOnlyOneDateOrReversedRangeThrowsBadRequest() {
+        // Only one of the two dates supplied.
+        assertThrows(BadRequestException.class,
+                () -> expenseService.getAll(LocalDate.of(2026, 10, 1), null));
+        // Start date after end date.
+        assertThrows(BadRequestException.class,
+                () -> expenseService.getAll(LocalDate.of(2026, 10, 31), LocalDate.of(2026, 10, 1)));
     }
 }

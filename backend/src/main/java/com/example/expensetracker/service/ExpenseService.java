@@ -5,12 +5,14 @@ import com.example.expensetracker.dto.ExpenseResponse;
 import com.example.expensetracker.entity.Category;
 import com.example.expensetracker.entity.Expense;
 import com.example.expensetracker.exception.ResourceNotFoundException;
+import com.example.expensetracker.exception.BadRequestException;
 import com.example.expensetracker.repository.CategoryRepository;
 import com.example.expensetracker.repository.ExpenseRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /*
@@ -54,11 +56,23 @@ public class ExpenseService {
 
     // Newest first. For now this returns everything; month/category filtering
     // arrives in Milestone 4.
-    public List<ExpenseResponse> getAll() {
+        // Optional date-range filter. Rule: both dates together, or neither.
+    // No dates -> everything (newest first). Both dates -> only that range, ends included.
+    public List<ExpenseResponse> getAll(LocalDate startDate, LocalDate endDate) {
         Sort newestFirst = Sort.by(Sort.Order.desc("expenseDate"), Sort.Order.desc("id"));
-        return expenseRepository.findAll(newestFirst).stream()
-                .map(ExpenseResponse::from)
-                .toList();
+
+        List<Expense> expenses;
+        if (startDate == null && endDate == null) {
+            expenses = expenseRepository.findAll(newestFirst);
+        } else if (startDate == null || endDate == null) {
+            throw new BadRequestException("startDate and endDate must be provided together");
+        } else if (startDate.isAfter(endDate)) {
+            throw new BadRequestException("startDate must not be after endDate");
+        } else {
+            expenses = expenseRepository.findByExpenseDateBetween(startDate, endDate, newestFirst);
+        }
+
+        return expenses.stream().map(ExpenseResponse::from).toList();
     }
 
     @Transactional
