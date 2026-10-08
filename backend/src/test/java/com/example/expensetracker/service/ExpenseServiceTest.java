@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.example.expensetracker.dto.ExpenseFilter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;                                                     // NEW
@@ -107,7 +107,7 @@ class ExpenseServiceTest {
         createOn(category, "2026-11-01");   // just after the range: excluded
 
         List<ExpenseResponse> october =
-                expenseService.getAll(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31));
+                expenseService.getAll(new ExpenseFilter(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31), null, null));
 
         assertEquals(2, october.size());
         // Results are newest first, so Oct 31 must come before Oct 1.
@@ -119,9 +119,26 @@ class ExpenseServiceTest {
     void getAllWithOnlyOneDateOrReversedRangeThrowsBadRequest() {
         // Only one of the two dates supplied.
         assertThrows(BadRequestException.class,
-                () -> expenseService.getAll(LocalDate.of(2026, 10, 1), null));
+                () -> expenseService.getAll(new ExpenseFilter(LocalDate.of(2026, 10, 1), null, null, null)));
         // Start date after end date.
         assertThrows(BadRequestException.class,
-                () -> expenseService.getAll(LocalDate.of(2026, 10, 31), LocalDate.of(2026, 10, 1)));
+                () -> expenseService.getAll(new ExpenseFilter(LocalDate.of(2026, 10, 31), LocalDate.of(2026, 10, 1), null, null)));
+    }
+
+    @Test
+    void getAllFilterByCategoryAndPaymentMethod() {
+        Category a = newCategory();
+        Category b = categoryRepository.save(new Category("Second Test Category"));
+
+        createOn(a, "2026-10-01");
+        expenseService.create(new ExpenseRequest(LocalDate.of(2026, 10, 2), a.getId(),
+                new BigDecimal("10.00"), "x", PaymentMethod.CASH));
+        createOn(b, "2026-10-03");
+
+        assertEquals(3, expenseService.getAll(new ExpenseFilter(null, null, null, null)).size());
+        assertEquals(2, expenseService.getAll(new ExpenseFilter(null, null, a.getId(), null)).size());
+        assertEquals(1, expenseService.getAll(new ExpenseFilter(null, null, null, PaymentMethod.CASH)).size());
+        assertEquals(1, expenseService.getAll(new ExpenseFilter(null, null, a.getId(), PaymentMethod.UPI)).size());
+        assertEquals(0, expenseService.getAll(new ExpenseFilter(null, null, b.getId(), PaymentMethod.CASH)).size());
     }
 }

@@ -1,7 +1,9 @@
 package com.example.expensetracker.controller;
 
+import com.example.expensetracker.dto.ExpenseFilter;
 import com.example.expensetracker.dto.ExpenseRequest;
 import com.example.expensetracker.dto.ExpenseResponse;
+import com.example.expensetracker.entity.PaymentMethod;
 import com.example.expensetracker.service.ExpenseService;
 import jakarta.validation.Valid;
 
@@ -39,8 +41,10 @@ public class ExpenseController {
     @GetMapping
     public List<ExpenseResponse> getAll(
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate){
-        return expenseService.getAll(startDate, endDate);
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+        @RequestParam(required = false) Long categoryId,
+        @RequestParam(required = false) PaymentMethod paymentMethod) {
+        return expenseService.getAll(new ExpenseFilter(startDate, endDate, categoryId, paymentMethod));
     }
 
     @GetMapping("/{id}")

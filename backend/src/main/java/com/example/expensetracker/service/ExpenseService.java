@@ -11,7 +11,10 @@ import com.example.expensetracker.repository.ExpenseRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.example.expensetracker.repository.ExpenseSpecifications;
+import com.example.expensetracker.dto.ExpenseFilter;
+import org.springframework.data.jpa.domain.Specification;
+import java.util.ArrayList;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -58,21 +61,31 @@ public class ExpenseService {
     // arrives in Milestone 4.
         // Optional date-range filter. Rule: both dates together, or neither.
     // No dates -> everything (newest first). Both dates -> only that range, ends included.
-    public List<ExpenseResponse> getAll(LocalDate startDate, LocalDate endDate) {
-        Sort newestFirst = Sort.by(Sort.Order.desc("expenseDate"), Sort.Order.desc("id"));
+    public List<ExpenseResponse> getAll(ExpenseFilter filter) {
+        validateDateRange(filter.startDate(), filter.endDate());
 
-        List<Expense> expenses;
-        if (startDate == null && endDate == null) {
-            expenses = expenseRepository.findAll(newestFirst);
-        } else if (startDate == null || endDate == null) {
-            throw new BadRequestException("startDate and endDate must be provided together");
-        } else if (startDate.isAfter(endDate)) {
-            throw new BadRequestException("startDate must not be after endDate");
-        } else {
-            expenses = expenseRepository.findByExpenseDateBetween(startDate, endDate, newestFirst);
+        // Collect ONLY the conditions the client actually asked for.
+        List<Specification<Expense>> conditions = new ArrayList<>();
+        if (filter.startDate() != null) {
+            // validateDateRange guarantees endDate is also present when startDate is.
+            conditions.add(ExpenseSpecifications.dateBetween(filter.startDate(), filter.endDate()));
+        }
+        if (filter.categoryId() != null) {
+            conditions.add(ExpenseSpecifications.hasCategory(filter.categoryId()));
+        }
+        if (filter.paymentMethod() != null) {
+            conditions.add(ExpenseSpecifications.hasPaymentMethod(filter.paymentMethod()));
         }
 
-        return expenses.stream().map(ExpenseResponse::from).toList();
+        // allOf joins them with AND. An empty list means "no WHERE clause" (everything).
+        Specification<Expense> spec = Specification.allOf(conditions);
+
+        Sort newestFirst = Sort.by(Sort.Order.desc("expenseDate"), Sort.Order.desc("id"));
+        return expenseRepository.findAll(spec, newestFirst).stream()
+                .map(ExpenseResponse::from)
+                .toList();
+
+       
     }
 
     @Transactional
@@ -96,6 +109,16 @@ public class ExpenseService {
     }
 
     // ---- private helpers ----
+
+       
+    private void validateDateRange(LocalDate startDate, LocalDate endDate) {
+        if ((startDate == null) != (endDate == null)) {
+            throw new BadRequestException("startDate and endDate must be provided together");
+        }
+        if (startDate != null && startDate.isAfter(endDate)) {
+            throw new BadRequestException("startDate must not be after endDate");
+        }
+    }
 
     private Expense findExpense(Long id) {
         return expenseRepository.findById(id)
