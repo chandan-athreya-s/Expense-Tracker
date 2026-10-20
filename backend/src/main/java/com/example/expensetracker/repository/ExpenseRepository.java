@@ -3,12 +3,19 @@ package com.example.expensetracker.repository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
+
 import com.example.expensetracker.dto.CategoryTotalResponse;
 import com.example.expensetracker.dto.DailyTotalResponse;
+import com.example.expensetracker.entity.Expense;
 
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import com.example.expensetracker.entity.Expense;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
@@ -47,4 +54,16 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>,
                                 """)
         List<DailyTotalResponse> findDailyTotals(@Param("startDate") LocalDate startDate,
                         @Param("endDate") LocalDate endDate);
+
+        @Override 
+        @EntityGraph(attributePaths = "category")
+        List<Expense> findAll(Specification<Expense> spec, Sort sort);
+
+        @Override
+        @EntityGraph(attributePaths = "category")
+        Page<Expense> findAll(Specification<Expense> spec, Pageable pageable);
+
+        @Override 
+        @EntityGraph(attributePaths = "category")
+        Optional<Expense> findById(Long id);
 }
