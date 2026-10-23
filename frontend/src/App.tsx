@@ -1,5 +1,20 @@
+import { Navigate, Route, Routes } from "react-router";
+import AppLayout from "./layouts/AppLayout";
+import AddExpensePage from "./pages/AddExpensePage";
 import HistoryPage from "./pages/HistoryPage";
 
 export default function App() {
-    return <HistoryPage />;
+  return (
+    <Routes>
+      {/* Routes nested inside the layout route render in its <Outlet /> */}
+      <Route element={<AppLayout />}>
+        {/* Opening "/" goes to the Add page (your nightly starting point).
+            In step 3.6 the Dashboard becomes the home page instead. */}
+        <Route index element={<Navigate to="/add" replace />} />
+        <Route path="add" element={<AddExpensePage />} />
+        <Route path="history" element={<HistoryPage />} />
+        <Route path="*" element={<p>Page not found.</p>} />
+      </Route>
+    </Routes>
+  );
 }
