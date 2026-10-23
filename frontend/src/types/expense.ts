@@ -16,3 +16,11 @@ export interface ExpenseFilters {
     categoryId?: number;
     paymentMethod?: string;
 }
+
+export interface ExpenseInput {
+    date: string;
+    categoryId: number;
+    amount: number;
+    description?: string;
+    paymentMethod: string;
+}

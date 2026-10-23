@@ -1,5 +1,5 @@
-import { apiGet } from "./apiClient";
-import type { Expense, ExpenseFilters } from "../types/expense";
+import { apiGet, apiPost } from "./apiClient";
+import type { Expense, ExpenseFilters, ExpenseInput } from "../types/expense";
 
 export function getExpenses(filters: ExpenseFilters = {}): Promise<Expense[]> {
     const params = new URLSearchParams();
@@ -12,4 +12,8 @@ export function getExpenses(filters: ExpenseFilters = {}): Promise<Expense[]> {
 
     const query = params.toString();
     return apiGet<Expense[]>(`/api/expenses${query ? `?${query}` : ""}`);
+}
+
+export function createExpense(input: ExpenseInput): Promise<Expense> {
+    return apiPost<Expense>("/api/expenses", input);
 }
