@@ -44,11 +44,22 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 export function apiGet<T>(path: string): Promise<T> {
     return request<T>(path);
 }
-
-export function apiPost<T>(path: string, body: unknown): Promise<T> {
+function sendJson<T>(method: "POST" | "PUT", path: string, body: unknown): Promise<T> {
     return request<T>(path, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
+        method,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
     });
+}
+
+export function apiPost<T>(path: string, body: unknown): Promise<T> {
+    return sendJson<T>("POST", path, body);
+}
+
+export function apiPut<T>(path: string, body: unknown): Promise<T> {
+    return sendJson<T>("PUT", path, body);
+}
+
+export function apiDelete(path: string): Promise<void> {
+    return request<void>(path, { method: "DELETE" });
 }

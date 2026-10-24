@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "./apiClient";
+import { apiDelete, apiGet, apiPost, apiPut } from "./apiClient";
 import type { Expense, ExpenseFilters, ExpenseInput } from "../types/expense";
 
 export function getExpenses(filters: ExpenseFilters = {}): Promise<Expense[]> {
@@ -16,4 +16,16 @@ export function getExpenses(filters: ExpenseFilters = {}): Promise<Expense[]> {
 
 export function createExpense(input: ExpenseInput): Promise<Expense> {
     return apiPost<Expense>("/api/expenses", input);
+}
+
+export function getExpenseById(id: number): Promise<Expense> {
+    return apiGet<Expense>(`/api/expenses/${id}`);
+}
+
+export function updateExpense(id: number, input: ExpenseInput): Promise<Expense> {
+    return apiPut<Expense>(`/api/expenses/${id}`, input);
+}
+
+export function deleteExpense(id: number): Promise<void> {
+    return apiDelete(`/api/expenses/${id}`);
 }
