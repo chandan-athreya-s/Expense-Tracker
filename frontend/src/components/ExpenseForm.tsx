@@ -8,6 +8,7 @@ import { getTodayIso, formatDisplayDate } from "../utils/dateUtils";
 import { formatCurrency } from "../utils/formatCurrency";
 import { ParsedApiError } from "../utils/parseApiError";
 
+const DESCRIPTION_MAX_LENGTH = 255;
 
 interface ExpenseFormValues {
   date: string;
@@ -22,6 +23,22 @@ interface ExpenseFormProps {
   paymentMethods: PaymentMethod[];
   // The form doesn't know HOW saving works; the page passes that in.
   onSubmit: (input: ExpenseInput) => Promise<Expense>;
+  initialExpense?: Expense;
+  onSaved?: (saved: Expense) => void;
+  onCancel?: () => void;
+}
+
+function initialValuesFrom(expense?: Expense): ExpenseFormValues {
+  if (!expense) {
+    return { date: getTodayIso(), categoryId: "", amount: "", description: "", paymentMethod: "" };
+  }
+  return {
+    date: expense.expenseDate,
+    categoryId: String(expense.categoryId),
+    amount: String(expense.amount),
+    description: expense.description ?? "",
+    paymentMethod: expense.paymentMethod,
+  };
 }
 
 // Friendly UX validation. The backend validates again and is the final authority.
@@ -47,14 +64,17 @@ function validate(values: ExpenseFormValues): Record<string, string> {
 const inputClass =
   "w-full rounded border border-gray-300 bg-white px-3 py-2 text-base"; // text-base (16px) stops iOS zooming in on focus
 
-export default function ExpenseForm({ categories, paymentMethods, onSubmit }: ExpenseFormProps) {
-  const [values, setValues] = useState<ExpenseFormValues>({
-    date: getTodayIso(),
-    categoryId: "",
-    amount: "",
-    description: "",
-    paymentMethod: "",
-  });
+export default function ExpenseForm({
+  categories,
+  paymentMethods,
+  onSubmit,
+  initialExpense,
+  onSaved,
+  onCancel,
+}: ExpenseFormProps) {
+  const isEditing = initialExpense !== undefined;
+  
+  const [values, setValues] = useState<ExpenseFormValues>(() => initialValuesFrom(initialExpense));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -91,6 +111,12 @@ export default function ExpenseForm({ categories, paymentMethods, onSubmit }: Ex
     setSubmitting(true); // disables the button so a double-tap can't save twice
     try {
       const saved = await onSubmit(input);
+      
+      if (isEditing) {
+        onSaved?.(saved);
+        return;
+      }
+      
       // Build the message from the SERVER's response, not from what we typed.
       setSuccessMessage(
         `Saved ${formatCurrency(saved.amount)} for ${saved.categoryName} on ${formatDisplayDate(saved.expenseDate)}`,
@@ -153,6 +179,7 @@ export default function ExpenseForm({ categories, paymentMethods, onSubmit }: Ex
         <input
           id="description"
           type="text"
+          maxLength={DESCRIPTION_MAX_LENGTH}
           className={inputClass}
           placeholder="e.g. Lunch"
           value={values.description}
@@ -184,8 +211,20 @@ export default function ExpenseForm({ categories, paymentMethods, onSubmit }: Ex
         disabled={submitting}
         className="w-full rounded bg-blue-600 px-4 py-3 font-semibold text-white disabled:opacity-50"
       >
-        {submitting ? "Saving…" : "Add Expense"}
+        {  }
+        {submitting ? "Saving…" : isEditing ? "Save Changes" : "Add Expense"}
       </button>
+
+        {  }
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="mt-3 w-full rounded border border-gray-300 px-4 py-3 font-semibold"
+          >
+            Cancel
+          </button>
+        )}
     </form>
   );
 }

@@ -4,9 +4,11 @@ import ExpenseRow from "./ExpenseRow";
 interface ExpenseListProps {
   expenses: Expense[];
   paymentLabels: Record<string, string>;
+  onDelete: (expense: Expense) => void;
+  deletingId: number | null;
 }
 
-export default function ExpenseList({ expenses, paymentLabels }: ExpenseListProps) {
+export default function ExpenseList({ expenses, paymentLabels, onDelete, deletingId }: ExpenseListProps) {
   // Empty state: a friendly message beats a blank screen.
   if (expenses.length === 0) {
     return <p className="text-gray-500">No expenses found.</p>;
@@ -20,6 +22,8 @@ export default function ExpenseList({ expenses, paymentLabels }: ExpenseListProp
           expense={expense}
           // If the label lookup hasn't loaded (or is missing), show the raw value.
           paymentLabel={paymentLabels[expense.paymentMethod] ?? expense.paymentMethod}
+          onDelete={onDelete}
+          isDeleting={deletingId === expense.id}
         />
       ))}
     </ul>
