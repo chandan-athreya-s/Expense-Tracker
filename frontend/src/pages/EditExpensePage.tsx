@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import ExpenseForm from "../components/ExpenseForm";
 import { useCategories } from "../hooks/useCategories";
 import { useExpense } from "../hooks/useExpense";
@@ -18,6 +18,10 @@ export default function EditExpensePage() {
 
 function EditExpenseContent({ expenseId }: { expenseId: number }) {
     const navigate = useNavigate();
+    
+    const location = useLocation();
+    const goBack = () => (location.key !== "default" ? navigate(-1) : navigate("/history"));
+
     const { expense, loading: expenseLoading, error: expenseError } = useExpense(expenseId);
     const categories = useCategories();
     const paymentMethods = usePaymentMethods();
@@ -40,8 +44,8 @@ function EditExpenseContent({ expenseId }: { expenseId: number }) {
                     paymentMethods={paymentMethods.paymentMethods}
                     initialExpense={expense}
                     onSubmit={(input) => updateExpense(expenseId, input)}
-                    onSaved={() => navigate("/history")}
-                    onCancel={() => navigate("/history")}
+                    onSaved={goBack}
+                    onCancel={goBack}
                 />
             )}
         </div>
