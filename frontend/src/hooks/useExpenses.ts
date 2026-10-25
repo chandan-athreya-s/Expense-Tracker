@@ -1,35 +1,18 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import { useFetch } from "./useFetch";
 import { getExpenses } from "../services/expenseService";
-import type { Expense } from "../types/expense";
+import type { ExpenseFilters } from "../types/expense";
 
-export function useExpenses() {
-    const [expenses, setExpenses] = useState<Expense[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+export function useExpenses(filters: ExpenseFilters = {}) {
+  // Pull out PRIMITIVES (strings/numbers). They compare by value.
+  // The `filters` object itself is a new object on every render, so it must not be a dependency.
+  const { startDate, endDate, categoryId, paymentMethod } = filters;
 
-    const [reloadCount, setReloadCount] = useState(0);
+  const fetcher = useCallback(
+    () => getExpenses({ startDate, endDate, categoryId, paymentMethod }),
+    [startDate, endDate, categoryId, paymentMethod],
+  );
 
-    useEffect(() => {
-        let cancelled = false;
-
-        getExpenses()
-            .then((data) => {
-                if (!cancelled){
-                    setExpenses(data);
-                    setError(null);
-                } 
-            })
-            .catch((err: unknown) => {
-                if (!cancelled) setError(err instanceof Error ? err.message : "Unknown error");
-            })
-            .finally(() => {
-                if (!cancelled) setLoading(false);
-            });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [reloadCount]);
-    const reload = useCallback(() => setReloadCount((count) => count + 1), []);
-    return { expenses, loading, error, reload };
+  const { data, loading, error, reload } = useFetch(fetcher);
+  return { expenses: data ?? [], loading, error, reload };
 }

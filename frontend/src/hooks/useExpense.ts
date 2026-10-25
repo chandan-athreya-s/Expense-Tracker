@@ -1,30 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
+import { useFetch } from "./useFetch";
 import { getExpenseById } from "../services/expenseService";
-import type { Expense } from "../types/expense";
 
 export function useExpense(id: number) {
-    const [expense, setExpense] = useState<Expense | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        let cancelled = false;
-
-        getExpenseById(id)
-        .then((data) => {
-            if (!cancelled) setExpense(data);
-        })
-        .catch((err: unknown) => {
-            if (!cancelled) setError(err instanceof Error ? err.message : "Unknown error");
-        })
-        .finally(() => {
-            if (!cancelled) setLoading(false);
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [id]);
-
-    return { expense, loading, error };
+  // A new function is created only when `id` changes, which re-triggers the fetch.
+  const fetcher = useCallback(() => getExpenseById(id), [id]);
+  const { data, loading, error } = useFetch(fetcher);
+  return { expense: data, loading, error };
 }
