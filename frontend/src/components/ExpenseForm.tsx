@@ -7,6 +7,7 @@ import type { Expense, ExpenseInput } from "../types/expense";
 import { getTodayIso, formatDisplayDate } from "../utils/dateUtils";
 import { formatCurrency } from "../utils/formatCurrency";
 import { ParsedApiError } from "../utils/parseApiError";
+import { validateAmount } from "../utils/validation";
 
 const DESCRIPTION_MAX_LENGTH = 255;
 
@@ -49,15 +50,8 @@ function validate(values: ExpenseFormValues): Record<string, string> {
   if (!values.categoryId) errors.categoryId = "Please choose a category";
   if (!values.paymentMethod) errors.paymentMethod = "Please choose a payment method";
 
-  if (!values.amount.trim()) {
-    errors.amount = "Amount is required";
-  } else if (!/^\d+(\.\d{1,2})?$/.test(values.amount.trim())) {
-    // Digits with at most 2 decimal places (matches amounts like 60.00 in your data)
-    errors.amount = "Enter a valid amount, e.g. 120 or 45.50";
-  } else if (Number(values.amount) <= 0) {
-    errors.amount = "Amount must be greater than zero";
-  }
-
+  const amountError = validateAmount(values.amount);
+  if (amountError) errors.amount = amountError;
   return errors;
 }
 

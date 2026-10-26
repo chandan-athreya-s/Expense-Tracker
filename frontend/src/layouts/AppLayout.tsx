@@ -2,9 +2,8 @@ import { NavLink, Outlet } from "react-router";
 
 // NavLink tells if its route is the current one, so we can highlight it.
 function linkClass({ isActive }: { isActive: boolean }) {
-  return `flex-1 py-3 text-center text-sm font-medium ${
-    isActive ? "text-blue-600" : "text-gray-500"
-  }`;
+  return `flex-1 py-3 text-center text-sm font-medium ${isActive ? "text-blue-600" : "text-gray-500"
+    }`;
 }
 
 export default function AppLayout() {
@@ -18,8 +17,12 @@ export default function AppLayout() {
 
       <nav className="fixed inset-x-0 bottom-0 border-t border-gray-200 bg-white">
         <div className="mx-auto flex max-w-md">
+          {/* "end" = highlight this tab only on exactly "/", not on every URL that starts with "/" */}
+          <NavLink to="/" end className={linkClass}>
+            Dashboard
+          </NavLink>
           <NavLink to="/add" className={linkClass}>
-            Add Expense
+            Add
           </NavLink>
           <NavLink to="/history" className={linkClass}>
             History
