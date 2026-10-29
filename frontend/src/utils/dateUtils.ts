@@ -15,3 +15,12 @@ export function getTodayIso(): string {
     const day = String(now.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
 }
+
+export function formatDayLabel(isoDate: string): string {
+    const [year, month, day] = isoDate.split("-").map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString("en-IN", {
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+    });
+}
